@@ -1,8 +1,6 @@
 C29.SD2.A01 - DirectX11 Setup
 ======
 
-
-
 ## Goal 
 
 *I recommend creating a new project for this titled `FPS`, and creating a `D3D11` branch to work in so you don't affect your MP2 project or current protogame.  By about week 3 or 4 the `RenderContext` should be back to fully functional again and we'll merge in.*
@@ -27,8 +25,8 @@ void App::Startup()
 
     // create the window
     m_window = new Window();  
-    m_window->Open( window_title, windowClientRatioOfHeight, aspectRatio ); 
-    m_window->SetInputSystem( g_InputSystem ); )
+    m_window->Open( windowTitle, aspectRatio, windowClientRatioOfHeight ); 
+    m_window->SetInputSystem( g_InputSystem ); 
 
     // create the render context
     g_RenderContext = new RenderContext(); 
@@ -108,11 +106,30 @@ void Game::Render() const
 ### Required Tasks
 **Required Tasks** are tasks that the course relies on being complete, and will most likely be built upon on later assignments.  All required tasks must be attempted before a bonus task will be graded. 
 
-- [ ] `Window` class
-- [ ] `RenderContext` changes
-- [ ] `SwapChain` created (seperately)
-- [ ] Ability to create a debug context by pre defining `RENDER_DEBUG`
-    - [ ] All non-release builds should define `RENDER_DEBUG` for now
+- [ ] *10pts*: `Window` class created in Engine to spec, with Protogame being updated; 
+- [ ] *20pts*: `RenderContext` changes
+    - All broken `RenderContext` methods a stripped with an assert or `todo` added to the body.
+    - [ ] `RenderContext` can be setup by giving it a window
+- [ ] *05pts* `Camera::SetClearMode` added
+- [ ] *05pts* `RenderContext::BeginCamera` should now clears depending on clear mode 
+    - [ ] For  now, clear the default swapchain on `RenderContext`
+- [ ] *10pts* `SwapChain` implemented
+    - [ ] Default `SwapChain` is added to your `RenderContext`, created during setup
+    - [ ] Ability to get the backbuffer texture.
+- [ ] *10pts*: `Texture` class added/modified
+- [ ] *10pts*: `Texture::GetOrCreateView` will return a texture view;    
+- [ ] *10pts*: Game code should cycle clear color each frame to show everything working. 
+- [ ] *20pts* Ability to create a debug context by pre defining `RENDER_DEBUG`
+    - [ ] All builds should define `RENDER_DEBUG` for now
+    - [ ] Be sure there are no leaked resources on shutdown (check `Output`)
+
+**How I will Grade**;  
+1. Pull, and compile your program in `Debug` and `Release`. 
+2. Run it, and look for the cycling color.
+3. Quit (`Escape`) and look for leaks in output
+4. Check the code to make sure all window/context creation has been moved out of App
+   - Also check that you are indeed making a debug context
+5. Grade extras if applicable
 
 ### Bonus Tasks
 **Bonus Tasks** are tasks that are related to the main assignment, but are not required for finishing the course, hopefully to allow for some personalization of your own engine.
@@ -125,18 +142,84 @@ Example, say for the `DevConsole` assignment, you attempt the extra `auto-comple
 
 Note, most bonus tasks are twice the work for half the points of a required task, and will not be graded at all if not all required tasks are attempted.  
 
-- [ ] (X01.00 : 05pts) Borderless Window Support
-- [ ] (X01.01 : 05pts) Fullscreen Support.  See notes, the default D3D11 support for this will not count.
-- [ ] (X01.10 : 02pts) Window alignment options
-- [ ] (X01.11 : 01pts) Allow change of window title at runtime
-- [ ] (X01.12 : 02pts) Set a custom window icon
-- [ ] (X01.13 : 02pts) Allow change of window icon at runtime
-- [ ] (X01.14 : 02pts) Show window loading progress in task bar. 
+- [ ] *X01.00 : 05pts*:  Borderless Window Support
+- [ ] *X01.01 : 05pts*:  Fullscreen Support.  See notes, the default D3D11 support for this will not count.
+- [ ] *X01.10 : 02pts*:  Window alignment options
+- [ ] *X01.11 : 01pts*:  Allow change of window title at runtime
+- [ ] *X01.12 : 02pts*:  Set a custom window icon
+- [ ] *X01.13 : 02pts*:  Allow change of window icon at runtime
+- [ ] *X01.14 : 02pts*:  Show window loading progress in task bar. 
 
 ------
+
 ## Notes
 
----
+### Stub Files
+- [Window.hpp](./Window.hpp)
+- [RenderContext.hpp](./RenderContext.hpp)
+- [SwapChain.hpp](./SwapChain.hpp)
+- [Texture.hpp](./Texture.hpp)
+- [TextureView.hpp](./TextureView.hpp)
+
+### Implementation Details
+- [Todo Macros](../../notes/Todo.hpp)
+- [Window Notes](../../notes/window.md)
+- [Device Creation](../../notes/devicecreation.md)
+- [Debug Object Creation](../../notes/d3ddebug.md)
+- [Presenting Backbuffer](../../notes/presenting.md)
+- [Clearing Backbuffer](../../notes/clearing.md)
+
+### Walkthrough
+
+Recommend checking in after each number step at least; 
+
+0. Create and change to the branch to `feature/d3d11`
+   - Create a new project called `FPS`*
+
+1. *Optional: add `todo` macros to your engine.*
+2. Create the `Window.hpp` and `Window.cpp` in your Engine.
+   - If you like using lots of folders, I suggest either `OS` or `Platform` for this.  ie;  `Engine/OS/Window.hpp` or `Engine/Platform/Window.hpp`
+3. Strip out all GL code from your Engine/Game
+   - First stop including any GL headers
+   - Go through and delete any handles (believe `Texture` may be the only problem)
+   - Compile to find places that are broken.  Comment out or delete the GL code and replace with an `ASSERT` or `UNIMPLEMENTED` macro to remind to you come back here later
+   - Once it compiles, commit and push. 
+
+4. Update `App` and `Game` code to be similar to the code at the beginning of assignment.
+
+5. Update `RenderContext` `Startup` and `Shutdown` to the D3D11 resources, see [Device Creation](../../notes/devicecreation.md)
+
+6. Test that you can see leaks.
+   - Be sure `RENDER_DEBUG` is defined in a visible location.  Preferably a `EngineBuildConfig.hpp` or similar header.
+   - "Forget" to release your `Context` or `Swapchain` d3d object and see if it reports at shutdown
+   - "Remember" to release your resources, and make sure no more leaks show up
+
+7. *Optional: Create a debug object.  This gives you better error reporting, but is not strictly required*
+
+8. Setup your SwapChain so you can present each frame (should see black or garbage on your screen after this)
+   - `SwapChain::Present` should be called from `RenderContext::EndFrame`
+
+9. Get clear screen working
+   - Be able to get the backbuffer texture
+   - Be able to create a texture view for that texture
+   - Update your `Camera` to have clear information on it.
+   - Update `RenderContext::BeginCamera` to clear the render target view for the backbuffer
+   - Test and see if it works.
+
+10. Create your readme for this assignment, `sd2.a01.md` in the root of your dept.
+
+11. Create your turnin branch, `sd2/turnin/a01`, and push it.
+
+12. Do a buddy build.
+
+13. Do any extras you want, either in your turnin branch or working branch, just be sure to merge between them as you complete tasks.  
+
+
+
+
+------
+
+## Extra Notes
 
 ### X01.00 : Borderless Window Support
 If you're going to support a full-screen mode, this is the one I'd recommend.
@@ -199,7 +282,7 @@ void Window::SetTitle( std::string const& title );
 When creating your window, be able to specify a set of icons to use.  This is handled when you
 register the window class.  You can have the icon loaded as a resource embedded in your executable, as a file near your exe, or as an image your construct in code. 
 
-Icons use the *.ico file format.
+Icons use the \*.ico file format.
 
 ---
 
